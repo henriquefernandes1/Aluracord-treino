@@ -1,34 +1,7 @@
 import { Box, Button, Text, TextField, Image } from '@skynexui/components';
+import React from 'react';
+import {useRouter} from 'next/router';
 import appConfig from '../config.json';
-
-function GlobalStyle() {
-    return (
-        <style global jsx>{`
-        * {
-          margin: 0;
-          padding: 0;
-          box-sizing: border-box;
-          list-style: none;
-        }
-        body {
-          font-family: 'Open Sans', sans-serif;
-        }
-        /* App fit Height */ 
-        html, body, #__next {
-          min-height: 100vh;
-          display: flex;
-          flex: 1;
-        }
-        #__next {
-          flex: 1;
-        }
-        #__next > * {
-          flex: 1;
-        }
-        /* ./App fit Height */ 
-      `}</style>
-    );
-}
 
 function Titulo(props) {
     const Tag = props.tag || 'h1';
@@ -53,11 +26,16 @@ function Titulo(props) {
 //Componente react
 
 export default function PaginaInicial() {
-    const username = 'Henrique';
+    /* const username = 'henriquefernandes1'; */
+    const [username, setUsername] = React.useState('henriquefernandes1');
+    console.log('Usuário', username);
+    //Acima separamos os dois retornos do React.useState. O primeiro é o pré-definido e o segundo é a função que altera o estado;
+    //Estrutura é [nomeDaVariavel, setNomeDaVariavel] = React.useState('Valor inicial mostrado');
+    const roteamento = useRouter(); //Utiliza o hook do import Router para o next rotear as páginas web
+
 
     return (
         <>
-            <GlobalStyle />
             <Box
                 styleSheet={{
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -84,6 +62,13 @@ export default function PaginaInicial() {
                     {/* Formulário */}
                     <Box
                         as="form"
+                        onSubmit = {function(event){
+                            event.preventDefault();
+                            console.log('O form foi submetido');
+                            roteamento.push('/chat');
+
+                        }}
+
                         styleSheet={{
                             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                             width: { xs: '100%', sm: '50%' }, textAlign: 'center', marginBottom: '32px',
@@ -94,7 +79,32 @@ export default function PaginaInicial() {
                             {appConfig.name}
                         </Text>
 
+                        {/* <input
+                            type="text"
+                            value={username}
+
+                            onChange={function Handler(event) {
+                                console.log("Usuário digitou", event.target.value);
+
+                                //Aqui troca-se o valor da variável
+                                //É avisado quem precisa trocar e pelo o quê.
+                                const valueInputLogin = event.target.value;
+                                setUsername(valueInputLogin);
+                            }}
+                        /> */}
+
                         <TextField
+                            value={username}
+
+                            onChange={function preencheInput(event) {
+                                console.log("Usuário digitou", event.target.value);
+
+                                //Aqui troca-se o valor da variável
+                                //É avisado quem precisa trocar e pelo o quê.
+                                const valueInputLogin = event.target.value;
+                                setUsername(valueInputLogin);
+                            }}
+                            
                             fullWidth
                             textFieldColors={{
                                 neutral: {
@@ -105,6 +115,7 @@ export default function PaginaInicial() {
                                 },
                             }}
                         />
+
                         <Button
                             type='submit'
                             label='Entrar'
@@ -115,6 +126,7 @@ export default function PaginaInicial() {
                                 mainColorLight: appConfig.theme.colors.primary[400],
                                 mainColorStrong: appConfig.theme.colors.primary[600],
                             }}
+
                         />
                     </Box>
                     {/* Formulário */}
