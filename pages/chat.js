@@ -1,22 +1,46 @@
 import { Box, Text, TextField, Image, Button } from '@skynexui/components';
 import React from 'react';
 import appConfig from '../config.json';
+import { createClient } from '@supabase/supabase-js'
+
+// Create a single supabase client for interacting with your database
+
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlhdCI6MTY0MzQxMjE3MywiZXhwIjoxOTU4OTg4MTczfQ.ongzUxJOACCFlbs-EnIqUqLSxUOPiv1Go2E3CzwfsLI';
+const SUPABASE_URL = 'https://xjgqgilnaojcrhnbtiil.supabase.co';
+const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 export default function ChatPage() {
     // A lógica vai aqui
     const [mensagem, setMensagem] = React.useState('');
     const [listaChat, setListaChat] = React.useState([]);
+
+    React.useEffect(() => {
+        supabaseClient
+            .from('listaMensagens')
+            .select('*')
+            .then(({ data }) => {
+                setListaChat(data);
+            });
+    }, []);
+
     function handleNovaMensagem(novaMensagem) {
         const mensagem = {
             texto: novaMensagem,
-            remetente: 'henriquefernandes1',
-            id: listaChat.length
+            de: 'henriquefernandes1',
         }
-        setListaChat([
-            mensagem,
-            ...listaChat //A sintaxe ...array não adiciona um array dentro de outro, mas sim os itens de um array dentro de outro
 
-        ]);
+        supabaseClient
+            .from('listaMensagens')
+            .insert([mensagem]) //DEVE TER OS MESMOS TIPOS QUE TÊM NO BANCO DE DADOS DO SUPABASE!!!
+            .order('id', {ascending: false})
+            .then(({ data }) => {
+                setListaChat([
+                    data[0],
+                    ...listaChat, //A sintaxe ...array não adiciona um array dentro de outro, mas sim os itens de um array dentro de outro
+
+                ]);
+            });
+
         setMensagem('');
     }
     // ./A lógica vai aqui
@@ -65,7 +89,7 @@ export default function ChatPage() {
                         console.log(mensagemAtual);
                         return (
                             <li key={mensagemAtual.id}>
-                                {mensagemAtual.remetente}: {mensagemAtual.texto}
+                                {mensagemAtual.de}: {mensagemAtual.texto}
                             </li>
                         );
                     })}*/}
@@ -87,7 +111,6 @@ export default function ChatPage() {
                             onKeyPress={(Event) => {
                                 if (Event.key === 'Enter') {
                                     Event.preventDefault();
-                                    console.log(Event);
                                     handleNovaMensagem(mensagem);
                                 }
                             }}
@@ -151,12 +174,11 @@ function Header() {
 }
 
 function MessageList(props) {
-    console.log('MessageList', props);
     return (
         <Box
             tag="ul"
             styleSheet={{
-                overflow: 'scroll',
+                overflow: 'auto',
                 display: 'flex',
                 flexDirection: 'column-reverse',
                 flex: 1,
@@ -191,10 +213,10 @@ function MessageList(props) {
                                     display: 'inline-block',
                                     marginRight: '8px',
                                 }}
-                                src={`https://github.com/${mensagem.remetente}.png`}
+                                src={`https://github.com/${mensagem.de}.png`}
                             />
                             <Text tag="strong">
-                                {mensagem.remetente}
+                                {mensagem.de}
                             </Text>
                             <Text
                                 styleSheet={{
