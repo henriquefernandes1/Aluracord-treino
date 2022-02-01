@@ -1,7 +1,9 @@
 import { Box, Text, TextField, Image, Button } from '@skynexui/components';
 import React from 'react';
 import appConfig from '../config.json';
+import { useRouter } from 'next/router';
 import { createClient } from '@supabase/supabase-js'
+import { ButtonSendSticker } from '../src/components/buttonSendSticker';
 
 // Create a single supabase client for interacting with your database
 
@@ -9,8 +11,19 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5v
 const SUPABASE_URL = 'https://xjgqgilnaojcrhnbtiil.supabase.co';
 const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+function escutaMensagensRealTime(addMensagem) {
+    return supabaseClient
+        .from('listaMensagens')
+        .on('INSERT', (respostaLive) => {
+            addMensagem(respostaLive.new);
+        })
+        .subscribe()
+};
+
 export default function ChatPage() {
     // A lógica vai aqui
+    const roteamento = useRouter();
+    const usuarioLogado = roteamento.query.username;
     const [mensagem, setMensagem] = React.useState('');
     const [listaChat, setListaChat] = React.useState([]);
 
@@ -18,27 +31,39 @@ export default function ChatPage() {
         supabaseClient
             .from('listaMensagens')
             .select('*')
+            .order('id', { ascending: false })
             .then(({ data }) => {
                 setListaChat(data);
             });
+
+        const subscription = escutaMensagensRealTime((novaMensagem) => {
+            setListaChat((valorAtualDaLista) => {
+                return [
+                    novaMensagem,
+                    ...valorAtualDaLista, //A sintaxe ...array não adiciona um array dentro de outro, mas sim os itens de um array dentro de outro
+
+                ]
+            });
+        })
+
+        return () => {
+            subscription.unsubscribe();
+        }
     }, []);
 
     function handleNovaMensagem(novaMensagem) {
         const mensagem = {
             texto: novaMensagem,
-            de: 'henriquefernandes1',
+            de: usuarioLogado,
         }
 
         supabaseClient
             .from('listaMensagens')
             .insert([mensagem]) //DEVE TER OS MESMOS TIPOS QUE TÊM NO BANCO DE DADOS DO SUPABASE!!!
-            .order('id', {ascending: false})
+            .order('id', { ascending: false })
             .then(({ data }) => {
-                setListaChat([
-                    data[0],
-                    ...listaChat, //A sintaxe ...array não adiciona um array dentro de outro, mas sim os itens de um array dentro de outro
+                console.log('Criando mensagens: ', data);
 
-                ]);
             });
 
         setMensagem('');
@@ -127,6 +152,13 @@ export default function ChatPage() {
                                 marginRight: '12px',
                                 color: appConfig.theme.colors.neutrals[200],
                             }}
+                        />
+
+                        <ButtonSendSticker
+                            onStickerClick={(sticker) => {
+                                handleNovaMensagem(`:sticker: ${sticker}`);
+                            }}
+
                         />
                     </Box>
                 </Box>
@@ -229,7 +261,16 @@ function MessageList(props) {
                                 {(new Date().toLocaleDateString())}
                             </Text>
                         </Box>
-                        {mensagem.texto}
+
+                        {mensagem.texto.startsWith(':sticker:')
+                            ? (
+                                <Image src={mensagem.texto.replace(':sticker:', '')} />
+                            )
+                            : (
+                                mensagem.texto
+                            )
+                        }
+
                     </Text>);
             })}
 
